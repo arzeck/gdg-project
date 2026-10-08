@@ -32,3 +32,4 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 	return result;
 };
+

@@ -160,3 +160,4 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 
 	return json({ success: true, message: 'Listing deleted successfully' });
 };
+

@@ -222,3 +222,4 @@ export async function deleteListingWithAsset(listing: Listing): Promise<void> {
 	}
 	await db.delete(listings).where(eq(listings.id, listing.id));
 }
+

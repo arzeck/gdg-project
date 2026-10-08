@@ -1,3 +1,5 @@
+import { writable } from 'svelte/store';
+
 export interface RealtimeListingEvent {
 	type: 'created' | 'updated' | 'sold' | 'deleted' | 'connected';
 	listingId?: string;
@@ -6,9 +8,9 @@ export interface RealtimeListingEvent {
 }
 
 class RealtimeManager {
-	hasNewListings = $state(false);
-	latestEvent = $state<RealtimeListingEvent | null>(null);
-	isConnected = $state(false);
+	hasNewListings = writable(false);
+	latestEvent = writable<RealtimeListingEvent | null>(null);
+	isConnected = writable(false);
 	private eventSource: EventSource | null = null;
 	private pollInterval: ReturnType<typeof setInterval> | null = null;
 	private lastETag: string | null = null;
@@ -21,7 +23,7 @@ class RealtimeManager {
 			this.eventSource = new EventSource('/api/events');
 
 			this.eventSource.onopen = () => {
-				this.isConnected = true;
+				this.isConnected.set(true);
 			};
 
 			this.eventSource.onmessage = (e) => {
@@ -29,9 +31,9 @@ class RealtimeManager {
 					const data = JSON.parse(e.data);
 					if (data.type === 'connected') return;
 
-					this.latestEvent = data;
+					this.latestEvent.set(data);
 					if (data.type === 'created') {
-						this.hasNewListings = true;
+						this.hasNewListings.set(true);
 					}
 				} catch {}
 			};
@@ -51,7 +53,7 @@ class RealtimeManager {
 			this.eventSource.close();
 			this.eventSource = null;
 		}
-		this.isConnected = false;
+		this.isConnected.set(false);
 	}
 
 	private startETagPolling() {
@@ -70,7 +72,7 @@ class RealtimeManager {
 					const etag = res.headers.get('ETag');
 					if (this.lastETag && this.lastETag !== etag) {
 						// Content changed!
-						this.hasNewListings = true;
+						this.hasNewListings.set(true);
 					}
 					this.lastETag = etag;
 				}
@@ -79,7 +81,7 @@ class RealtimeManager {
 	}
 
 	markSeen() {
-		this.hasNewListings = false;
+		this.hasNewListings.set(false);
 	}
 
 	destroy() {

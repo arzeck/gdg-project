@@ -154,3 +154,4 @@ export function deleteSessionCookie(cookies: Cookies): void {
 export function getSessionTokenFromCookies(cookies: Cookies): string | undefined {
 	return cookies.get(SESSION_COOKIE_NAME);
 }
+
