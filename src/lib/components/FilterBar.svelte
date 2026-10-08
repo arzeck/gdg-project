@@ -16,7 +16,7 @@
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	function applyFilters(updates: Record<string, string | null | undefined>) {
-		const params = new URLSearchParams(page.url.searchParams);
+		const params = new URLSearchParams(page.url.searchParams.toString());
 
 		for (const [key, val] of Object.entries(updates)) {
 			if (val === null || val === undefined || val === '' || val === 'all') {
@@ -32,9 +32,8 @@
 		}
 
 		goto(`?${params.toString()}`, {
-			keepFocus: true,
-			noScroll: true,
-			replaceState: true
+			reset: false,
+			replace: true
 		});
 	}
 
@@ -72,7 +71,7 @@
 		selectedCategory = 'all';
 		selectedSort = 'newest';
 		showSold = false;
-		goto('/', { noScroll: true, replaceState: true });
+		goto('/', { reset: false, replace: true });
 	}
 
 	const hasActiveFilters = $derived(

@@ -14,7 +14,8 @@
 	} = $props();
 
 	const isSold = $derived(listing.status === 'sold');
-	let isFavourite = $state(Boolean(listing.isFavourite));
+	let localFav = $state<boolean | null>(null);
+	const isFavourite = $derived(localFav !== null ? localFav : Boolean(listing.isFavourite));
 	let favLoading = $state(false);
 
 	function formatPrice(val: number): string {
@@ -38,7 +39,7 @@
 		e.stopPropagation();
 
 		const prev = isFavourite;
-		isFavourite = !prev; // Optimistic toggle
+		localFav = !prev; // Optimistic toggle
 
 		if (ontogglefav) {
 			ontogglefav(listing.id, prev);
@@ -47,13 +48,13 @@
 			favLoading = true;
 			try {
 				const res = await fetch(`/api/favourites/${listing.id}`, {
-					method: isFavourite ? 'POST' : 'DELETE'
+					method: localFav ? 'POST' : 'DELETE'
 				});
 				if (!res.ok) {
-					isFavourite = prev; // Revert on error
+					localFav = prev; // Revert on error
 				}
 			} catch {
-				isFavourite = prev;
+				localFav = prev;
 			} finally {
 				favLoading = false;
 			}

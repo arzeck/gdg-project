@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
+	import LocationInput from '$lib/components/LocationInput.svelte';
 	import { listingCategories } from '$lib/validation';
 	import { ArrowLeft, Loader2, PlusCircle, IndianRupee, MapPin } from 'lucide-svelte';
 
@@ -134,28 +135,8 @@
 				</div>
 			</div>
 
-			<!-- Campus Location (Optional) -->
-			<div>
-				<label for="location" class="block text-xs font-medium uppercase tracking-wider text-zinc-400">
-					Campus Location / Hostel <span class="text-zinc-500 lowercase">(optional)</span>
-				</label>
-				<div class="relative mt-1.5">
-					<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-zinc-500">
-						<MapPin class="h-4 w-4" />
-					</div>
-					<input
-						id="location"
-						name="location"
-						type="text"
-						bind:value={location}
-						placeholder="e.g. Hostel 7, Central Library Foyer, SAC"
-						class="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 py-2.5 pr-3.5 pl-10 text-sm text-zinc-100 placeholder-zinc-500 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-					/>
-				</div>
-				{#if form?.fieldErrors?.location}
-					<p class="mt-1 text-xs text-red-400">{form.fieldErrors.location}</p>
-				{/if}
-			</div>
+			<!-- Campus Location (with Nominatim & Quick Spots) -->
+			<LocationInput bind:value={location} error={form?.fieldErrors?.location} />
 
 			<!-- Image Upload with Client Preview -->
 			<ImageUpload required={true} error={form?.fieldErrors?.image} />

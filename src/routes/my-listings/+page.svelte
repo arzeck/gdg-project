@@ -190,7 +190,8 @@
 								use:enhance={() => {
 									return async ({ result, update }) => {
 										if (result.type === 'success') {
-											toast.success(result.data?.message || 'Status updated');
+											const msg = (result.data as { message?: string } | undefined)?.message;
+											toast.success(msg || 'Status updated');
 											await invalidateAll();
 										}
 										await update();

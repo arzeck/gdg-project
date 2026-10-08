@@ -84,7 +84,7 @@
 		accept="image/jpeg,image/png,image/webp"
 		onchange={handleFileChange}
 		class="hidden"
-		{required: required && !previewUrl}
+		required={required && !previewUrl}
 	/>
 
 	{#if previewUrl}

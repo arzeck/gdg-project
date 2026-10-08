@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { listingSchema } from '$lib/validation';
 import { uploadImage } from '$lib/server/cloudinary';
+import { eventBus } from '$lib/server/events';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const q = url.searchParams.get('q') || undefined;
@@ -132,6 +133,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			status: 'available'
 		})
 		.returning();
+
+	// Broadcast real-time created event
+	eventBus.broadcast({
+		type: 'created',
+		listingId: createdListing.id,
+		title: createdListing.title
+	});
 
 	return json(createdListing, { status: 201 });
 };

@@ -1,24 +1,34 @@
 <script lang="ts">
 	import { navigating } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import { onMount, onDestroy } from 'svelte';
+	import { realtime } from '$lib/realtime';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import ListingGrid from '$lib/components/ListingGrid.svelte';
 	import Skeletons from '$lib/components/Skeletons.svelte';
-	import { Sparkles, ChevronLeft, ChevronRight, PlusCircle } from 'lucide-svelte';
+	import { Sparkles, ChevronLeft, ChevronRight, PlusCircle, RefreshCw } from 'lucide-svelte';
 
 	let { data } = $props();
 
 	const isNavigating = $derived(Boolean(navigating.to));
 
+	onMount(() => {
+		realtime.init();
+	});
+
+	onDestroy(() => {
+		realtime.destroy();
+	});
+
 	function goToPage(newPage: number) {
-		const params = new URLSearchParams(page.url.searchParams);
+		const params = new URLSearchParams(page.url.searchParams.toString());
 		params.set('page', newPage.toString());
-		goto(`?${params.toString()}`, { noScroll: false });
+		goto(`?${params.toString()}`);
 	}
 
 	function resetFilters() {
-		goto('/', { replaceState: true });
+		goto('/', { replace: true });
 	}
 </script>
 
@@ -30,7 +40,24 @@
 	/>
 </svelte:head>
 
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+<div class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+	<!-- Real-time New Listings Pill -->
+	{#if realtime.hasNewListings}
+		<div class="fixed top-20 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-top-4 duration-200">
+			<button
+				type="button"
+				onclick={async () => {
+					realtime.markSeen();
+					await invalidateAll();
+				}}
+				class="flex items-center gap-2 rounded-full border border-emerald-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-semibold text-emerald-300 shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-zinc-900 hover:text-emerald-200"
+			>
+				<RefreshCw class="h-3.5 w-3.5 animate-spin text-emerald-400" />
+				<span>New items posted! Click to refresh</span>
+			</button>
+		</div>
+	{/if}
+
 	<!-- Hero Section -->
 	<section class="mb-10 text-center sm:text-left">
 		<div class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 mb-3">

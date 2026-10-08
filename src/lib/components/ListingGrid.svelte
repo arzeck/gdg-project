@@ -8,12 +8,14 @@
 		emptyTitle = 'No items found',
 		emptyDescription = 'Try adjusting your search criteria or filters.',
 		emptyActionText,
+		emptyActionHref,
 		onemptyaction
 	}: {
 		listings: ListingWithSeller[];
 		emptyTitle?: string;
 		emptyDescription?: string;
 		emptyActionText?: string;
+		emptyActionHref?: string;
 		onemptyaction?: () => void;
 	} = $props();
 </script>
@@ -29,6 +31,7 @@
 		title={emptyTitle}
 		description={emptyDescription}
 		actionText={emptyActionText}
+		actionHref={emptyActionHref}
 		onaction={onemptyaction}
 	/>
 {/if}

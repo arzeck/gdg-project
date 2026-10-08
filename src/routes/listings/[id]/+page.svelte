@@ -27,9 +27,10 @@
 
 	let deleteModalOpen = $state(false);
 	let isDeleting = $state(false);
-	let deleteForm: HTMLFormElement;
+	let deleteForm = $state<HTMLFormElement>();
 
-	let isFavourite = $state(Boolean(listing.isFavourite));
+	let localFav = $state<boolean | null>(null);
+	const isFavourite = $derived(localFav !== null ? localFav : Boolean(listing.isFavourite));
 	let favLoading = $state(false);
 
 	function formatPrice(val: number): string {
@@ -50,21 +51,21 @@
 
 	async function handleFavToggle() {
 		const prev = isFavourite;
-		isFavourite = !prev; // Optimistic
+		localFav = !prev; // Optimistic
 		favLoading = true;
 
 		try {
 			const res = await fetch(`/api/favourites/${listing.id}`, {
-				method: isFavourite ? 'POST' : 'DELETE'
+				method: localFav ? 'POST' : 'DELETE'
 			});
 			if (!res.ok) {
-				isFavourite = prev;
+				localFav = prev;
 				toast.error('Could not update favourite status');
 			} else {
-				toast.success(isFavourite ? 'Added to favourites' : 'Removed from favourites');
+				toast.success(localFav ? 'Added to favourites' : 'Removed from favourites');
 			}
 		} catch {
-			isFavourite = prev;
+			localFav = prev;
 			toast.error('Network error');
 		} finally {
 			favLoading = false;
@@ -208,7 +209,9 @@
 						<div class="min-w-0 flex-1">
 							<div class="flex items-center gap-1.5">
 								<p class="text-xs font-semibold text-zinc-200 truncate">{listing.seller.name}</p>
-								<ShieldCheck class="h-3.5 w-3.5 text-emerald-400 shrink-0" title="Verified Campus Student" />
+								<span title="Verified Campus Student" class="inline-flex shrink-0">
+									<ShieldCheck class="h-3.5 w-3.5 text-emerald-400" />
+								</span>
 							</div>
 							<p class="text-[11px] text-zinc-500 truncate">{listing.seller.email}</p>
 						</div>
@@ -263,7 +266,8 @@
 							use:enhance={() => {
 								return async ({ result, update }) => {
 									if (result.type === 'success') {
-										toast.success(result.data?.message || 'Status updated');
+										const msg = (result.data as { message?: string } | undefined)?.message;
+										toast.success(msg || 'Status updated');
 										await invalidateAll();
 									}
 									await update();
