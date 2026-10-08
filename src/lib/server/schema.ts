@@ -129,3 +129,4 @@ export type NewListing = typeof listings.$inferInsert;
 export type Favourite = typeof favourites.$inferSelect;
 export type Category = (typeof categoryEnum.enumValues)[number];
 export type Status = (typeof statusEnum.enumValues)[number];
+
