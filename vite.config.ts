@@ -3,7 +3,15 @@ import path from 'node:path';
 import adapter from '@sveltejs/adapter-vercel';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+
+// Load .env into process.env so server modules have access
+const env = loadEnv('', process.cwd(), '');
+for (const [key, val] of Object.entries(env)) {
+	if (!process.env[key]) {
+		process.env[key] = val;
+	}
+}
 
 // On Windows without Developer Mode, symlinks require 'junction' or fallback to directory copy
 if (process.platform === 'win32') {
