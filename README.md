@@ -212,8 +212,8 @@ A template is provided in [`.env.example`](./.env.example).
 
 1. **Clone the repository**:
    ```bash
-   git clone <repo-url>
-   cd gdg
+   git clone https://github.com/arzeck/gdg-project/tree/main
+   cd gdg-project
    ```
 
 2. **Install dependencies**:
