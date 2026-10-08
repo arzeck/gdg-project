@@ -1,278 +1,196 @@
-# CampusExchange — Campus Marketplace
+# CampusExchange
 
-> A production-grade, full-stack marketplace web application engineered for college students to securely buy and sell pre-owned textbooks, electronics, cycles, furniture, and campus essentials within their university ecosystem.
+A marketplace for students to buy and sell used stuff on campus: textbooks, electronics, cycles, hostel furniture. Built for the GDG Campus Marketplace challenge.
 
-[![Tech Stack](https://img.shields.io/badge/Stack-SvelteKit%205%20%7C%20TypeScript%20%7C%20Tailwind%20%7C%20Neon%20Postgres-emerald)](https://svelte.dev)
-[![Database](https://img.shields.io/badge/Database-Neon%20Serverless%20Postgres%20%2B%20Drizzle%20ORM-blue)](https://neon.tech)
-[![Deployment](https://img.shields.io/badge/Deploy-Vercel%20Serverless-black)](https://vercel.com)
+**Live:** https://gdg-project-theta.vercel.app/
 
----
+## Try it
 
-## Live Demo & Test Credentials
+The seed script creates three demo accounts (password for all: `password123`). The login page has quick-fill buttons for them.
 
-- **Live Deployment URL**: [https://gdg-campus-marketplace.vercel.app](https://gdg-campus-marketplace.vercel.app) *(or your deployed Vercel URL)*
+| Name | Email | Listings |
+| :--- | :--- | :--- |
+| Aarav Sharma | `aarav@campus.edu` | Hero Sprint cycle, Casio fx-991EX (sold), Sony WH-1000XM4 (sold), electric kettle |
+| Priya Patel | `priya@campus.edu` | CLRS 4th Ed, mesh study chair, Techfest hoodie |
+| Rohan Verma | `rohan@campus.edu` | Logitech MX Master 3S, Yonex racket set, foldable bed table |
 
-### Pre-seeded Demo Accounts
-The database is pre-seeded with 3 realistic student accounts and 10 campus listings. You can log into any of them directly or use the **1-Click Demo Fill** buttons on the `/login` screen:
+That's 10 listings, 2 of them sold, so you can see the sold state straight away.
 
-| Name | Campus Email | Password | Pre-seeded Listings |
-| :--- | :--- | :--- | :--- |
-| **Aarav Sharma** | `aarav@campus.edu` | `password123` | CLRS 3rd Ed, Hercules Roadeo Cycle, Logitech G304 Mouse, Sony WH-1000XM4 |
-| **Priya Patel** | `priya@campus.edu` | `password123` | iPad Air 5th Gen (64GB M1), Ergonomic Study Chair, Campus Lab Coat |
-| **Rohan Gupta** | `rohan@campus.edu` | `password123` | Casio FX-991EX Calculator, Yonex Badminton Racket, Wooden Mini Bedside Table |
+## Stack
 
----
+- **SvelteKit 5** with TypeScript. Pages, form actions and API routes all live in one app.
+- **Tailwind CSS 4**, Lucide icons, dark theme.
+- **Postgres on Neon** via **Drizzle ORM**.
+- **Zod** for validation, shared by forms and API routes.
+- **Cloudinary** for images, uploaded server-side only.
+- **Bun** to run the dev/build scripts, **Vercel** for hosting.
 
-## Tech Stack & Architecture
+## Setup
 
-- **Frontend & Full-Stack Framework**: **SvelteKit** (latest with **Svelte 5 Runes**: `$state`, `$derived`, `$props`, `$effect`) using server routes (`+page.server.ts`), form actions (`use:enhance`), and request hooks (`hooks.server.ts`). Zero separate backend service.
-- **Styling & UI**: **Tailwind CSS**, Geist / Geist Mono typography, dark minimal tech-forward palette (`#090a0f` background, subtle `zinc-800` borders, emerald `#10b981` accents), and **Lucide Svelte** icons.
-- **Database & ORM**: **Neon Serverless Postgres** paired with **Drizzle ORM** and `drizzle-kit` for automated SQL schema migrations and strict type inference.
-- **Authentication**: Custom stateful session-based auth. Passwords hashed with `bcryptjs` (10 rounds). Cryptographically random 32-byte session tokens stored as SHA-256 hashes in PostgreSQL. Transmitted via `httpOnly`, `secure`, `sameSite=lax` cookies with 30-day expiry and sliding 15-day refresh.
-- **Validation**: Strict **Zod** validation schemas shared between client UX forms and server-side endpoints.
-- **Media Storage**: **Cloudinary** signed server-side uploads (5MB size enforcement, JPG/PNG/WEBP whitelist) with automated asset destruction on listing updates and deletions.
-- **Location Services**: **OpenStreetMap Nominatim API** proxy with in-memory caching and rapid campus area selection pills.
-- **Real-Time Layer**: Dual-mode real-time sync with serverless **Server-Sent Events (SSE)** and automated HTTP **ETag / 304 Not Modified polling fallback**.
-- **Package Manager & Runtime**: **Bun** for rapid dependency resolution and sub-second dual-stack IPv4/IPv6 database connection initialization.
-- **Deployment**: **Vercel** via `@sveltejs/adapter-vercel`.
+You need [Bun](https://bun.sh), a free [Neon](https://neon.tech) database and a free [Cloudinary](https://cloudinary.com) account. The npm scripts call `bun --bun vite`, so Bun is required as the scripts stand.
 
----
+```bash
+git clone https://github.com/arzeck/gdg-project.git
+cd gdg-project
+bun install
+cp .env.example .env     # fill in the values below
+bun run db:push          # create tables
+bun run db:seed          # demo users + listings
+bun run dev              # http://localhost:5173
+```
 
-## Entity-Relationship (ER) Schema
+`.env`:
+
+```env
+DATABASE_URL=postgresql://user:password@host/neondb?sslmode=require
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+ORIGIN=http://localhost:5173
+```
+
+Other scripts: `bun run check` (svelte-check), `bun run build`, `bun run db:generate`, `bun run db:migrate`.
+
+### Deploying to Vercel
+
+Push to GitHub, import the repo in Vercel, add the environment variables above. `@sveltejs/adapter-vercel` handles the rest. `.npmrc` sets `legacy-peer-deps=true` because the npm install on Vercel hit peer dependency conflicts.
+
+## What it does
+
+**Accounts**
+- Register, log in, log out. Passwords are hashed with bcrypt.
+- Sessions are stored in the database. The cookie holds a random token; only its SHA-256 hash is saved. Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production. Sessions last 30 days and renew when less than 15 days remain.
+- Login errors are generic ("Invalid email or password") so you can't probe which emails exist.
+- Login and register are rate limited per IP (10 and 8 attempts a minute).
+- `hooks.server.ts` redirects logged-out users away from `/listings/new`, edit pages, `/my-listings` and `/favourites`, and returns 401 for write requests to `/api/*` without a session.
+
+**Browsing**
+- Home page grid, 12 per page.
+- Search (title and description), category, price range, campus location, sort (newest / price), and a "show sold" toggle. All of it lives in the URL, so a search link can be shared.
+- Search input is debounced by 300ms.
+
+**Listings**
+- Create and edit with title, description, price (whole rupees), category, location and one photo (JPG/PNG/WebP, max 5MB, checked in the browser and again on the server).
+- Replacing a photo or deleting a listing also deletes the old image from Cloudinary.
+- Only the owner can edit, delete or mark sold. This is checked on the server in every route, not just hidden in the UI. Others get 403.
+- Sold listings are dimmed with a SOLD badge, and the contact button is disabled.
+- Contact is a `mailto:` link with a prefilled message.
+- `/my-listings` is the seller dashboard: tabs for all / available / sold, with edit, toggle sold and delete.
+
+**Extras**
+- **Favourites:** heart button on cards and the detail page (optimistic update), plus a `/favourites` page.
+- **Location autocomplete:** the location field has quick-pick campus spots and suggestions from OpenStreetMap Nominatim, proxied through `/api/locations` (responses cached for an hour).
+- **Live updates:** see below.
+
+## Live updates (and where it falls short)
+
+When a listing is created, edited, sold or deleted, the server emits an event. `/api/events` streams these over Server-Sent Events and the client shows a toast and refreshes its data.
+
+The catch: the event bus is an in-memory object. That works on one long-running server, but Vercel runs separate short-lived function instances, so one user's event often never reaches another user's stream. When the SSE connection drops, `src/lib/realtime.ts` switches to polling `/api/listings/latest` every 5 seconds. That endpoint returns an ETag built from the listing count and latest update time, so unchanged checks come back as `304`. In practice, on Vercel the polling is what makes it work.
+
+## Database
+
+Tables: `users`, `sessions`, `listings`, `favourites` (see `src/lib/server/schema.ts`). Deleting a user removes their sessions, listings and favourites; deleting a listing removes its favourites.
 
 ```mermaid
 erDiagram
-    USERS ||--o{ SESSIONS : "creates"
-    USERS ||--o{ LISTINGS : "owns"
-    USERS ||--o{ FAVOURITES : "saves"
-    LISTINGS ||--o{ FAVOURITES : "bookmarked in"
+    USERS ||--o{ SESSIONS : has
+    USERS ||--o{ LISTINGS : owns
+    USERS ||--o{ FAVOURITES : saves
+    LISTINGS ||--o{ FAVOURITES : "saved in"
 
     USERS {
-        uuid id PK "default random"
-        varchar name "Student Name"
-        varchar email UK "Campus Email"
-        varchar password_hash "Bcrypt hash"
-        timestamp created_at "now()"
+        uuid id PK
+        text name
+        text email UK
+        text password_hash
+        timestamptz created_at
     }
-
     SESSIONS {
-        varchar id PK "SHA-256 Token Hash"
-        uuid user_id FK "References users(id)"
-        timestamp expires_at "Session expiry"
+        text id PK "SHA-256 of token"
+        uuid user_id FK
+        timestamptz expires_at
     }
-
     LISTINGS {
-        uuid id PK "default random"
-        uuid user_id FK "References users(id) ON DELETE CASCADE"
-        varchar title "Listing Title"
-        text description "Detailed Description"
-        integer price "Price in INR (₹)"
-        listing_category category "Books, Electronics, Furniture, etc."
-        text image_url "Cloudinary Secure URL"
-        varchar image_public_id "Cloudinary Asset ID"
-        varchar location "Campus Area / Hostel"
-        listing_status status "available | sold"
-        timestamp created_at "Index (status, cat, created_at)"
-        timestamp updated_at "Auto-updated"
+        uuid id PK
+        uuid user_id FK
+        text title
+        text description
+        int price "whole INR"
+        enum category
+        text image_url
+        text image_public_id
+        text location
+        enum status "available | sold"
+        timestamptz created_at
+        timestamptz updated_at
     }
-
     FAVOURITES {
-        uuid user_id PK, FK "References users(id)"
-        uuid listing_id PK, FK "References listings(id) ON DELETE CASCADE"
-        timestamp created_at "now()"
+        uuid user_id PK, FK
+        uuid listing_id PK, FK
+        timestamptz created_at
     }
 ```
 
-### Database Indexes & Performance Optimizations
-- `idx_listings_status_cat_created`: Composite index on `(status, category, created_at DESC)` for sub-millisecond filtering on the browse feed.
-- `idx_listings_user`: Index on `(user_id)` for instant seller dashboard retrieval.
-- `idx_sessions_user`: Index on `(user_id)` for rapid session invalidation and cleanup.
-- Title and description search uses parameterized ILIKE matching across indexed text columns.
+Indexes on `listings`: `status`, `category`, `created_at`, `user_id`, and a composite `(status, category, created_at)` for the browse query. On `favourites`: `user_id` and `listing_id`. Search uses `ILIKE '%term%'`, which can't use these indexes. It's fine at this scale but would need full-text search or trigram indexes for a big dataset.
 
----
+## API
 
-## Core Features Breakdown
+Page actions (`/login`, `/register`, `/logout`) are SvelteKit form actions, not JSON endpoints.
 
-### 1. Authentication & Route Security
-- **Registration & Login**: Field-level client & server validation with Zod. Generic authentication errors prevent email enumeration attacks. In-memory IP rate limiting protects authentication endpoints.
-- **Route Guards**: Evaluated centrally in `hooks.server.ts`. Authenticated users visiting `/login` or `/register` are automatically redirected to `/`. Unauthenticated users attempting to access `/listings/new`, `/listings/:id/edit`, `/my-listings`, or `/favourites` are redirected to `/login?redirectTo=...`.
-- **Session Lifecycle**: Secure sliding window refreshes active sessions that are within 15 days of expiration.
+| Method | Endpoint | Auth | Notes |
+| :--- | :--- | :---: | :--- |
+| GET | `/api/listings` | no | Filters: `q`, `category`, `minPrice`, `maxPrice`, `location`, `showSold`, `sort`, `page`, `limit` |
+| POST | `/api/listings` | yes | Multipart (with image) or JSON (with `imageUrl`). `201`, `401`, `422` |
+| GET | `/api/listings/:id` | no | `200`, `404` |
+| PATCH | `/api/listings/:id` | owner | `200`, `401`, `403`, `404`, `422` |
+| DELETE | `/api/listings/:id` | owner | Also deletes the Cloudinary image |
+| PATCH | `/api/listings/:id/sold` | owner | Toggles, or sets status if the body has `{ "status": "sold" \| "available" }` |
+| POST | `/api/favourites/:id` | yes | `404` if the listing doesn't exist |
+| DELETE | `/api/favourites/:id` | yes | |
+| GET | `/api/locations?q=` | no | Nominatim suggestions |
+| GET | `/api/events` | no | SSE stream |
+| GET | `/api/listings/latest` | no | ETag check, `200` or `304` |
 
-### 2. Marketplace Feed & Shareable Search
-- **Responsive Grid**: Adaptive card layout with loading skeleton states (`ListingGrid` and `Skeletons.svelte`).
-- **Deep Shareable Search**: Real-time URL query parameter synchronization (`?q=...&category=...&minPrice=...&maxPrice=...&location=...&sort=...&showSold=...`).
-- **Debounced Input**: Search input is debounced by 300ms to eliminate redundant database queries while students type.
-- **Server-Driven Pagination**: Clean page-based pagination controls keeping URL state synchronized.
+## Project layout
 
-### 3. Listing Creation & Cloudinary Integration
-- **Server-Side Signed Uploads**: Raw Cloudinary API secrets never leak to the client browser. Images are validated server-side for MIME type (JPEG/PNG/WEBP) and file size (≤ 5MB).
-- **Client Image Preview**: Instant pre-upload preview with file size display and quick removal before submission.
-- **Asset Cleanup**: Replacing an image during an edit or deleting a listing triggers automated background destruction of the previous Cloudinary asset via `cloudinary.uploader.destroy`.
-
-### 4. Owner Authorization & Listing Lifecycle
-- **Zero-Trust Ownership Checks**: Every mutating endpoint (`POST`, `PATCH`, `DELETE`) verifies `listing.userId === locals.user.id` on the server before applying any changes. Non-owners receive HTTP `403 Forbidden`.
-- **Sold Status Styling**: Sold listings are styled with dimmed image opacity, a prominent `SOLD` badge overlay, and disabled email contact buttons across all views (feed, detail, and seller dashboard).
-- **Destructive Action Confirmation**: Deletions require explicit confirmation via `ConfirmDialog.svelte`.
-
-### 5. Seller Dashboard ("My Listings")
-- Accessible at `/my-listings`, allowing sellers to view active inventory, filter by "Available" and "Sold", toggle availability status in one click, and access quick edit/delete actions.
-
----
-
-## Bonus Features Implemented
-
-### Bonus A: Favourites & Wishlist System
-- **Optimistic Heart Toggles**: Students can bookmark items directly from browse cards or listing detail pages with instant visual feedback.
-- **Dedicated Wishlist View**: `/favourites` route displays all saved items with empty state recommendations.
-- **Database Backed**: Persistent PostgreSQL composite-key join table (`favourites`) with cascade deletion when items are removed.
-
-### Bonus B: Location Autocomplete & Campus Area Filters
-- **OpenStreetMap Nominatim Proxy**: Secure server-side proxy route `/api/locations` prevents CORS issues and includes in-memory query caching.
-- **Campus Quick-Pills**: Location inputs provide 1-click pills for popular campus spots (`Hostel 1-16`, `Central Library`, `Student Activity Center`, `Department Complex`, `Main Cafeteria`).
-- **Location-Based Filtering**: Search marketplace listings by specific campus hostels or landmarks.
-
-### Bonus C: Real-Time Event Sync & Serverless Fallback
-- **Server-Sent Events (SSE)**: The `/api/events` endpoint broadcasts real-time events (`listing:created`, `listing:updated`, `listing:sold`, `listing:deleted`) with 15-second keep-alive heartbeats.
-- **ETag / HTTP 304 Polling Fallback**: Because serverless environments (such as Vercel Lambdas) terminate long-lived connections, the client (`src/lib/realtime.ts`) includes automated degradation to conditional ETag polling (`/api/listings/latest`) using `If-None-Match`, consuming minimal bandwidth when no changes exist.
-- **Floating Notification Pill**: Shows a subtle "New listings posted — Click to refresh" banner on the home screen when peers post new items.
-
----
-
-## Complete API Reference Table
-
-| Method | Endpoint | Auth | Status Codes | Description |
-| :--- | :--- | :---: | :---: | :--- |
-| `POST` | `/login` *(action)* | No | `200, 303, 400` | Authenticates student, issues secure session cookie |
-| `POST` | `/register` *(action)* | No | `200, 303, 400` | Registers new student, creates session |
-| `POST` | `/logout` *(action)* | Yes | `303` | Destroys session in DB and clears cookie |
-| `GET` | `/api/listings` | No | `200` | Fetch listings with filters (`q`, `category`, `minPrice`, `maxPrice`, `location`, `showSold`, `sort`, `page`) |
-| `POST` | `/api/listings` | Yes | `201, 400, 401, 422` | Create listing with multipart image upload |
-| `GET` | `/api/listings/:id` | No | `200, 404` | Get single listing details with seller info & favourite flag |
-| `PATCH` | `/api/listings/:id` | Yes | `200, 400, 401, 403, 404, 422` | Update listing details or replace image (owner only) |
-| `DELETE` | `/api/listings/:id` | Yes | `200, 401, 403, 404` | Delete listing and destroy Cloudinary asset (owner only) |
-| `PATCH` | `/api/listings/:id/sold` | Yes | `200, 401, 403, 404` | Toggle listing status between `available` and `sold` (owner only) |
-| `POST` | `/api/favourites/:id` | Yes | `200, 401, 404` | Add listing to user's favourites |
-| `DELETE` | `/api/favourites/:id` | Yes | `200, 401, 404` | Remove listing from user's favourites |
-| `GET` | `/api/locations` | No | `200` | Query Nominatim OSM autocomplete suggestions |
-| `GET` | `/api/events` | No | `200` | Server-Sent Events stream for real-time marketplace events |
-| `GET` | `/api/listings/latest` | No | `200, 304` | ETag conditional polling endpoint for serverless fallback |
-
----
-
-## Key Technical Decisions & Challenges Faced
-
-### 1. Dual-Stack IPv6 Timeout Mitigation on Windows / Node
-- **Challenge**: Standard Node.js `fetch` and Undici on Windows suffered intermittent 10-second DNS lookup timeouts (`AggregateError [ETIMEDOUT]`) when connecting to Neon AWS US-East-1 poolers over dual-stack IPv6 connections.
-- **Solution**: Executed Vite and background scripts via the **Bun** runtime (`bun --bun vite`). Bun resolves pooler endpoints natively with sub-millisecond connection times, avoiding connection drops.
-
-### 2. Windows NTFS Junction Fallback for `@sveltejs/adapter-vercel`
-- **Challenge**: Vercel's adapter attempts to create POSIX symbolic links during the build phase (`fs.symlinkSync`), which throws `EPERM: operation not permitted` on Windows workstations unless Developer Mode is activated.
-- **Solution**: Implemented a non-intrusive shim in `vite.config.ts` intercepting `fs.symlinkSync` to utilize Windows NTFS directory junctions (`junction`), gracefully falling back to recursive copying (`fs.cpSync`) if privileges are restricted.
-
-### 3. Svelte 5 Runes Architecture
-- **Decision**: Built natively on Svelte 5 runes (`$state`, `$derived`, `$props`, `$effect`). Reactive URL filter updates use `$derived`, while interactive state (such as optimistic heart toggling and modal visibility) uses strictly typed `$state` variables with zero legacy Svelte 4 store subscriptions.
-
-### 4. Cloudinary Secret Shielding & Automated Garbage Collection
-- **Decision**: Client browsers never receive Cloudinary API secrets or upload presets. All uploads are processed via server form actions and server routes. Whenever a student updates an item with a new photo or deletes a listing, the server reads the previous `imagePublicId` and destroys the old asset on Cloudinary.
-
----
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# Neon Postgres Connection String (pooled connection recommended)
-DATABASE_URL="postgresql://username:password@ep-proud-waterfall-a400j63u-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
-
-# Session Security
-SESSION_SECRET="your-super-secret-random-32-byte-string"
-
-# Cloudinary Credentials (server-side only)
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
-CLOUDINARY_API_KEY="your-api-key"
-CLOUDINARY_API_SECRET="your-api-secret"
-
-# Environment
-NODE_ENV="development"
+```
+src/
+  hooks.server.ts        session loading + route guards
+  lib/
+    validation.ts        Zod schemas, price formatting
+    realtime.ts          SSE client with polling fallback
+    toast.ts             toast store
+    components/          FilterBar, ListingCard, ImageUpload, LocationInput, ...
+    server/              db, schema, auth, cloudinary, listings queries, events, seed
+  routes/
+    +page.svelte         browse feed
+    listings/            new, [id], [id]/edit
+    my-listings/ favourites/ login/ register/ logout/
+    api/                 listings, favourites, locations, events
+drizzle/                 generated SQL migration
 ```
 
-A template is provided in [`.env.example`](./.env.example).
+## Things I ran into
 
----
+- **Slow database connections on Windows.** Under plain Node, connecting to Neon kept timing out (`ETIMEDOUT`) on my machine. Running Vite through Bun (`bun --bun vite`) fixed it, which is why the scripts use Bun.
+- **Vercel adapter on Windows.** The adapter makes symlinks during the build, which fails with `EPERM` without Developer Mode. `vite.config.ts` has a small Windows-only workaround that falls back to junctions or copying. It does nothing on Linux or macOS.
+- **Runes in plain `.ts` files.** I first wrote the toast and realtime state with `$state`, which threw a `ReferenceError` during SSR. Those two files use Svelte stores instead; components still use runes.
 
-## Local Development Setup
+## Known limitations
 
-### Prerequisites
-- [Bun](https://bun.sh/) (v1.1+ recommended) or Node.js (v20+)
-- A free [Neon](https://neon.tech) PostgreSQL database
-- A free [Cloudinary](https://cloudinary.com) account
+- Emails aren't verified and there's no check for a campus domain. The "verified" shield on a seller is decoration only.
+- Seller emails are included in the public listing API responses, because contact is via `mailto:`. A real version would hide them behind a message system.
+- The rate limiter and event bus are in-memory, so they reset on cold starts and aren't shared across instances. Redis (e.g. Upstash) would fix both.
+- Re-running `bun run db:seed` adds the demo listings again.
+- No automated tests. I tested by hand.
+- Nominatim allows about 1 request per second; heavy use would need a proper geocoding service.
+- Single campus only. Multiple campuses would need a `campus_id` on users and listings.
 
-### Steps
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/arzeck/gdg-project/tree/main
-   cd gdg-project
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   bun install
-   ```
-
-3. **Configure environment variables**:
-   ```bash
-   cp .env.example .env
-   # Populate DATABASE_URL and Cloudinary credentials in .env
-   ```
-
-4. **Apply database migrations**:
-   ```bash
-   bun run db:push
-   ```
-
-5. **Seed demo users and listings**:
-   ```bash
-   bun run db:seed
-   ```
-
-6. **Start the development server**:
-   ```bash
-   bun run dev
-   ```
-   Open [http://localhost:5173](http://localhost:5173) in your browser.
-
----
-
-## Production Build & Vercel Deployment
-
-1. **Run type-checking and lint checks**:
-   ```bash
-   bun run check
-   ```
-
-2. **Build the production bundle**:
-   ```bash
-   bun run build
-   ```
-
-3. **Deploy to Vercel**:
-   - Push the repository to GitHub.
-   - Import the project into [Vercel](https://vercel.com).
-   - Add all environment variables (`DATABASE_URL`, `SESSION_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`).
-   - Vercel automatically detects `@sveltejs/adapter-vercel` and packages the app as serverless functions.
-
----
-
-## Known Limitations
-
-1. **In-Memory Rate Limiting**: The current IP rate limiter operates in-memory. In a distributed multi-region serverless deployment, rate limiting should be backed by an external store such as Upstash Redis.
-2. **OpenStreetMap Nominatim Rate Limits**: The Nominatim public API imposes an upper limit of 1 request/second. In high-traffic university deployments, local campus GIS data or a dedicated geocoding service should be cached.
-3. **Campus Scope**: The current application is designed for a single university campus. Multi-campus support would require adding a `campus_id` foreign key across users and listings.
-
----
+## AI assistance
+I wrote the user authentication, external api connection, database interaction (fetch and push) myself and tested everything manually (basically the core backend is mine, refined by AI).
+I used Claude for basic project structure (to make things faster for me), project UI structure, and the real-time updates part (because it was taking too much time to figure out myself).
 
 ## License
 
-MIT License. Designed and built for the GDG Campus Marketplace challenge.
+MIT
