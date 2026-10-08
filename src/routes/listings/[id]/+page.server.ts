@@ -4,6 +4,7 @@ import { getListingById, deleteListingWithAsset } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
+import { eventBus } from '$lib/server/events';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const id = params.id;
@@ -51,6 +52,12 @@ export const actions: Actions = {
 			})
 			.where(eq(listings.id, id));
 
+		eventBus.broadcast({
+			type: nextStatus === 'sold' ? 'sold' : 'updated',
+			listingId: id,
+			title: listing.title
+		});
+
 		return {
 			success: true,
 			message: nextStatus === 'sold' ? 'Item marked as sold' : 'Item marked as available'
@@ -74,6 +81,12 @@ export const actions: Actions = {
 		}
 
 		await deleteListingWithAsset(listing);
+
+		eventBus.broadcast({
+			type: 'deleted',
+			listingId: id,
+			title: listing.title
+		});
 
 		throw redirect(303, '/my-listings');
 	}

@@ -5,6 +5,7 @@ import { listings, type Category } from '$lib/server/schema';
 import { listingSchema } from '$lib/validation';
 import { uploadImage, deleteImage } from '$lib/server/cloudinary';
 import { eq } from 'drizzle-orm';
+import { eventBus } from '$lib/server/events';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	const id = params.id;
@@ -129,6 +130,12 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 		.where(eq(listings.id, id))
 		.returning();
 
+	eventBus.broadcast({
+		type: 'updated',
+		listingId: id,
+		title: updatedListing.title
+	});
+
 	return json(updatedListing);
 };
 
@@ -157,6 +164,12 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 
 	// 4. Delete listing and Cloudinary asset
 	await deleteListingWithAsset(listing);
+
+	eventBus.broadcast({
+		type: 'deleted',
+		listingId: id,
+		title: listing.title
+	});
 
 	return json({ success: true, message: 'Listing deleted successfully' });
 };

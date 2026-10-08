@@ -4,6 +4,7 @@ import { listingSchema, getFieldErrors } from '$lib/validation';
 import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { uploadImage } from '$lib/server/cloudinary';
+import { eventBus } from '$lib/server/events';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -83,6 +84,13 @@ export const actions: Actions = {
 				status: 'available'
 			})
 			.returning();
+
+		// Broadcast real-time created event
+		eventBus.broadcast({
+			type: 'created',
+			listingId: newListing.id,
+			title: newListing.title
+		});
 
 		throw redirect(303, `/listings/${newListing.id}`);
 	}

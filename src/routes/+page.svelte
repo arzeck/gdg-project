@@ -2,7 +2,6 @@
 	import { navigating } from '$app/state';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount, onDestroy } from 'svelte';
 	import { realtime } from '$lib/realtime';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import ListingGrid from '$lib/components/ListingGrid.svelte';
@@ -13,14 +12,6 @@
 
 	const isNavigating = $derived(Boolean(navigating.to));
 	const hasNewListings = realtime.hasNewListings;
-
-	onMount(() => {
-		realtime.init();
-	});
-
-	onDestroy(() => {
-		realtime.destroy();
-	});
 
 	function goToPage(newPage: number) {
 		const params = new URLSearchParams(page.url.searchParams.toString());
@@ -50,6 +41,7 @@
 				onclick={async () => {
 					realtime.markSeen();
 					await invalidateAll();
+					if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
 				}}
 				class="flex items-center gap-2 rounded-full border border-emerald-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-semibold text-emerald-300 shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-zinc-900 hover:text-emerald-200"
 			>

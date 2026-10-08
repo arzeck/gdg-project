@@ -6,6 +6,7 @@ import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { uploadImage, deleteImage } from '$lib/server/cloudinary';
 import { eq } from 'drizzle-orm';
+import { eventBus } from '$lib/server/events';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -107,6 +108,12 @@ export const actions: Actions = {
 				updatedAt: new Date()
 			})
 			.where(eq(listings.id, id));
+
+		eventBus.broadcast({
+			type: 'updated',
+			listingId: id,
+			title: validation.data.title
+		});
 
 		throw redirect(303, `/listings/${id}`);
 	}

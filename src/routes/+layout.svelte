@@ -2,6 +2,8 @@
 	import '../app.css';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
+	import { onMount, onDestroy } from 'svelte';
+	import { realtime } from '$lib/realtime';
 	import Toast from '$lib/components/Toast.svelte';
 	import {
 		ShoppingBag,
@@ -23,6 +25,14 @@
 
 	const user = $derived(data.user);
 	const currentPath = $derived(page.url.pathname);
+
+	onMount(() => {
+		realtime.init();
+	});
+
+	onDestroy(() => {
+		realtime.destroy();
+	});
 
 	function closeMenus() {
 		mobileMenuOpen = false;

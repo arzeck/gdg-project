@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
+import { invalidateAll } from '$app/navigation';
+import { toast } from '$lib/toast';
 
 export interface RealtimeListingEvent {
 	type: 'created' | 'updated' | 'sold' | 'deleted' | 'connected';
@@ -14,9 +16,11 @@ class RealtimeManager {
 	private eventSource: EventSource | null = null;
 	private pollInterval: ReturnType<typeof setInterval> | null = null;
 	private lastETag: string | null = null;
+	private isInitialized = false;
 
 	init() {
-		if (typeof window === 'undefined') return;
+		if (typeof window === 'undefined' || this.isInitialized) return;
+		this.isInitialized = true;
 
 		// 1. Try SSE first
 		try {
@@ -28,12 +32,24 @@ class RealtimeManager {
 
 			this.eventSource.onmessage = (e) => {
 				try {
-					const data = JSON.parse(e.data);
+					const data = JSON.parse(e.data) as RealtimeListingEvent;
 					if (data.type === 'connected') return;
 
 					this.latestEvent.set(data);
+
 					if (data.type === 'created') {
 						this.hasNewListings.set(true);
+						if (data.title) {
+							toast.info(`New item posted: "${data.title}"`);
+						}
+						invalidateAll();
+					} else if (data.type === 'sold') {
+						if (data.title) {
+							toast.info(`"${data.title}" marked as SOLD`);
+						}
+						invalidateAll();
+					} else if (data.type === 'updated' || data.type === 'deleted') {
+						invalidateAll();
 					}
 				} catch {}
 			};
@@ -73,11 +89,12 @@ class RealtimeManager {
 					if (this.lastETag && this.lastETag !== etag) {
 						// Content changed!
 						this.hasNewListings.set(true);
+						invalidateAll();
 					}
 					this.lastETag = etag;
 				}
 			} catch {}
-		}, 12000);
+		}, 5000);
 	}
 
 	markSeen() {
@@ -85,6 +102,7 @@ class RealtimeManager {
 	}
 
 	destroy() {
+		this.isInitialized = false;
 		this.disconnectSSE();
 		if (this.pollInterval) {
 			clearInterval(this.pollInterval);

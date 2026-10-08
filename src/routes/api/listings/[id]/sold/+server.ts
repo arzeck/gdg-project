@@ -3,6 +3,7 @@ import { getListingById } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
+import { eventBus } from '$lib/server/events';
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 	// 1. Authentication Check
@@ -46,6 +47,12 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 		})
 		.where(eq(listings.id, id))
 		.returning();
+
+	eventBus.broadcast({
+		type: nextStatus === 'sold' ? 'sold' : 'updated',
+		listingId: id,
+		title: updatedListing.title
+	});
 
 	return json(updatedListing);
 };
