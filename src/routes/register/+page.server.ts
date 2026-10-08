@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { registerSchema } from '$lib/validation';
+import { registerSchema, getFieldErrors } from '$lib/validation';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
@@ -37,15 +37,8 @@ export const actions: Actions = {
 
 		const validation = registerSchema.safeParse({ name, email, password });
 		if (!validation.success) {
-			const fieldErrors: Record<string, string> = {};
-			for (const issue of validation.error.issues) {
-				const path = issue.path[0]?.toString();
-				if (path && !fieldErrors[path]) {
-					fieldErrors[path] = issue.message;
-				}
-			}
 			return fail(400, {
-				fieldErrors,
+				fieldErrors: getFieldErrors(validation.error),
 				values: { name, email }
 			});
 		}

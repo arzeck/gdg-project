@@ -47,19 +47,11 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 	return bcrypt.compare(password, hash);
 }
 
-// Session Token Generation & Hashing
-export function generateSessionToken(): string {
-	const bytes = new Uint8Array(32);
-	crypto.getRandomValues(bytes);
-	return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
+import { createHash, randomBytes } from 'node:crypto';
 
-export async function hashToken(token: string): Promise<string> {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(token);
-	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-	return Array.from(new Uint8Array(hashBuffer), (b) => b.toString(16).padStart(2, '0')).join('');
-}
+// Session Token Generation & Hashing
+export const generateSessionToken = (): string => randomBytes(32).toString('hex');
+export const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
 
 export interface SessionValidationResult {
 	session: Session | null;
@@ -149,9 +141,5 @@ export function deleteSessionCookie(cookies: Cookies): void {
 	cookies.delete(SESSION_COOKIE_NAME, {
 		path: '/'
 	});
-}
-
-export function getSessionTokenFromCookies(cookies: Cookies): string | undefined {
-	return cookies.get(SESSION_COOKIE_NAME);
 }
 

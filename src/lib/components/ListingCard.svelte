@@ -13,18 +13,12 @@
 		ontogglefav?: (id: string, currentlyFav: boolean) => void;
 	} = $props();
 
+	import { formatPrice } from '$lib/validation';
+
 	const isSold = $derived(listing.status === 'sold');
 	let localFav = $state<boolean | null>(null);
 	const isFavourite = $derived(localFav !== null ? localFav : Boolean(listing.isFavourite));
 	let favLoading = $state(false);
-
-	function formatPrice(val: number): string {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			maximumFractionDigits: 0
-		}).format(val);
-	}
 
 	function formatDate(date: string | Date): string {
 		const d = new Date(date);

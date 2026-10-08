@@ -90,55 +90,30 @@ export async function getListings(
 		orderByClause = [desc(listings.createdAt)];
 	}
 
-	// Execute queries with where clause only if conditions exist
-	let total = 0;
-	let rows: Array<{
-		listing: Listing;
-		seller: { id: string; name: string; email: string };
-	}> = [];
+	// Execute queries with where clause
+	const whereClause = conditions.length ? (conditions.length === 1 ? conditions[0] : and(...conditions)) : undefined;
 
-	if (conditions.length > 0) {
-		const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
-		const [countResult] = await db
-			.select({ total: count() })
-			.from(listings)
-			.where(whereClause);
-		total = countResult?.total || 0;
+	const [countResult] = await db
+		.select({ total: count() })
+		.from(listings)
+		.where(whereClause);
+	const total = countResult?.total || 0;
 
-		rows = await db
-			.select({
-				listing: listings,
-				seller: {
-					id: users.id,
-					name: users.name,
-					email: users.email
-				}
-			})
-			.from(listings)
-			.innerJoin(users, eq(listings.userId, users.id))
-			.where(whereClause)
-			.orderBy(...orderByClause)
-			.limit(limit)
-			.offset(offset);
-	} else {
-		const [countResult] = await db.select({ total: count() }).from(listings);
-		total = countResult?.total || 0;
-
-		rows = await db
-			.select({
-				listing: listings,
-				seller: {
-					id: users.id,
-					name: users.name,
-					email: users.email
-				}
-			})
-			.from(listings)
-			.innerJoin(users, eq(listings.userId, users.id))
-			.orderBy(...orderByClause)
-			.limit(limit)
-			.offset(offset);
-	}
+	const rows = await db
+		.select({
+			listing: listings,
+			seller: {
+				id: users.id,
+				name: users.name,
+				email: users.email
+			}
+		})
+		.from(listings)
+		.innerJoin(users, eq(listings.userId, users.id))
+		.where(whereClause)
+		.orderBy(...orderByClause)
+		.limit(limit)
+		.offset(offset);
 
 	const totalPages = Math.ceil(total / limit) || 1;
 
@@ -203,14 +178,6 @@ export async function getListingById(
 		seller: row.seller,
 		isFavourite
 	};
-}
-
-/**
- * Verifies that the current user is the owner of the given listing.
- * Non-negotiable security requirement.
- */
-export function verifyOwnership(listing: Listing, userId: string): boolean {
-	return listing.userId === userId;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getListingById, verifyOwnership, deleteListingWithAsset } from '$lib/server/listings';
+import { getListingById, deleteListingWithAsset } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { listingSchema } from '$lib/validation';
@@ -34,7 +34,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 	}
 
 	// 3. Ownership Check (Strict Server-Side Authz)
-	if (!verifyOwnership(listing, locals.user.id)) {
+	if (listing.userId !== locals.user.id) {
 		return json(
 			{ error: 'Forbidden: You do not have permission to edit this listing' },
 			{ status: 403 }
@@ -148,7 +148,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 	}
 
 	// 3. Ownership Check (Strict Server-Side Authz)
-	if (!verifyOwnership(listing, locals.user.id)) {
+	if (listing.userId !== locals.user.id) {
 		return json(
 			{ error: 'Forbidden: You do not have permission to delete this listing' },
 			{ status: 403 }

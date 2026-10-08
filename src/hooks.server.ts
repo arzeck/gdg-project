@@ -1,7 +1,6 @@
 import { redirect, json } from '@sveltejs/kit';
 import type { Handle } from '@sveltejs/kit/hooks';
 import {
-	getSessionTokenFromCookies,
 	validateSessionToken,
 	setSessionCookie,
 	deleteSessionCookie
@@ -11,7 +10,7 @@ const PROTECTED_PAGE_PREFIXES = ['/listings/new', '/my-listings', '/favourites']
 const AUTH_PAGE_PATHS = ['/login', '/register'];
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const token = getSessionTokenFromCookies(event.cookies);
+	const token = event.cookies.get('session_token');
 
 	if (token) {
 		const { session, user } = await validateSessionToken(token);

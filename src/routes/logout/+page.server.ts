@@ -1,7 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import {
-	getSessionTokenFromCookies,
 	invalidateSession,
 	deleteSessionCookie
 } from '$lib/server/auth';
@@ -12,7 +11,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
 	default: async (event) => {
-		const token = getSessionTokenFromCookies(event.cookies);
+		const token = event.cookies.get('session_token');
 		if (token) {
 			await invalidateSession(token);
 			deleteSessionCookie(event.cookies);

@@ -15,6 +15,7 @@
 		MapPin,
 		Calendar
 	} from 'lucide-svelte';
+	import { formatPrice } from '$lib/validation';
 
 	let { data } = $props();
 
@@ -33,14 +34,6 @@
 			return true;
 		})
 	);
-
-	function formatPrice(val: number): string {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			maximumFractionDigits: 0
-		}).format(val);
-	}
 
 	function formatDate(date: string | Date): string {
 		return new Date(date).toLocaleDateString('en-IN', {

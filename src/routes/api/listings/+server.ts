@@ -2,7 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { getListings } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
-import { listingSchema } from '$lib/validation';
+import { listingSchema, getFieldErrors } from '$lib/validation';
 import { uploadImage } from '$lib/server/cloudinary';
 import { eventBus } from '$lib/server/events';
 
@@ -44,58 +44,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'Unauthorized: You must be logged in to create a listing' }, { status: 401 });
 	}
 
-	let title = '';
-	let description = '';
-	let price = 0;
-	let category = '';
-	let location = '';
-	let imageFile: File | null = null;
-	let imageUrl = '';
-	let imagePublicId: string | null = null;
+	const formData = request.headers.get('content-type')?.includes('multipart/form-data') ? await request.formData() : null;
+	const body = !formData ? await request.json().catch(() => ({})) : null;
 
-	const contentType = request.headers.get('content-type') || '';
-
-	if (contentType.includes('multipart/form-data')) {
-		const formData = await request.formData();
-		title = formData.get('title')?.toString() || '';
-		description = formData.get('description')?.toString() || '';
-		price = parseInt(formData.get('price')?.toString() || '0', 10);
-		category = formData.get('category')?.toString() || '';
-		location = formData.get('location')?.toString() || '';
-
-		const file = formData.get('image');
-		if (file instanceof File && file.size > 0) {
-			imageFile = file;
-		}
-	} else {
-		const body = await request.json().catch(() => ({}));
-		title = body.title || '';
-		description = body.description || '';
-		price = body.price || 0;
-		category = body.category || '';
-		location = body.location || '';
-		imageUrl = body.imageUrl || '';
-		imagePublicId = body.imagePublicId || null;
-	}
+	const title = (formData ? formData.get('title') : body?.title)?.toString() || '';
+	const description = (formData ? formData.get('description') : body?.description)?.toString() || '';
+	const price = parseInt((formData ? formData.get('price') : body?.price)?.toString() || '0', 10);
+	const category = (formData ? formData.get('category') : body?.category)?.toString() || '';
+	const location = (formData ? formData.get('location') : body?.location)?.toString() || '';
+	const rawFile = formData?.get('image');
+	const imageFile = rawFile instanceof File && rawFile.size > 0 ? rawFile : null;
+	let imageUrl = body?.imageUrl || '';
+	let imagePublicId = body?.imagePublicId || null;
 
 	// 2. Validate input fields using Zod
-	const validation = listingSchema.safeParse({
-		title,
-		description,
-		price,
-		category,
-		location
-	});
-
+	const validation = listingSchema.safeParse({ title, description, price, category, location });
 	if (!validation.success) {
-		const fieldErrors: Record<string, string> = {};
-		for (const issue of validation.error.issues) {
-			const path = issue.path[0]?.toString();
-			if (path && !fieldErrors[path]) {
-				fieldErrors[path] = issue.message;
-			}
-		}
-		return json({ error: 'Validation failed', fieldErrors }, { status: 422 });
+		return json({ error: 'Validation failed', fieldErrors: getFieldErrors(validation.error) }, { status: 422 });
 	}
 
 	// 3. Image validation and upload

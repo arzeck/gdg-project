@@ -1,6 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getListings, getListingById, verifyOwnership, deleteListingWithAsset } from '$lib/server/listings';
+import { getListings, getListingById, deleteListingWithAsset } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
@@ -39,7 +39,7 @@ export const actions: Actions = {
 		if (!listing) return fail(404, { message: 'Listing not found' });
 
 		// Server-side ownership verification
-		if (!verifyOwnership(listing, locals.user.id)) {
+		if (listing.userId !== locals.user.id) {
 			return fail(403, { message: 'Forbidden: You do not own this listing' });
 		}
 
@@ -72,7 +72,7 @@ export const actions: Actions = {
 		if (!listing) return fail(404, { message: 'Listing not found' });
 
 		// Server-side ownership verification
-		if (!verifyOwnership(listing, locals.user.id)) {
+		if (listing.userId !== locals.user.id) {
 			return fail(403, { message: 'Forbidden: You do not own this listing' });
 		}
 

@@ -1,17 +1,6 @@
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
-import bcrypt from 'bcryptjs';
-import * as schema from './schema';
+import { db } from './db';
 import { users, listings } from './schema';
-
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-	console.error('DATABASE_URL is not set. Please set DATABASE_URL in your .env file.');
-	process.exit(1);
-}
-
-const sql = neon(databaseUrl);
-const db = drizzle(sql, { schema });
+import bcrypt from 'bcryptjs';
 
 async function seed() {
 	console.log('🌱 Seeding database...');

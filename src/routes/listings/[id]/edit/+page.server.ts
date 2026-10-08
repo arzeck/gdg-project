@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { listingSchema } from '$lib/validation';
-import { getListingById, verifyOwnership } from '$lib/server/listings';
+import { listingSchema, getFieldErrors } from '$lib/validation';
+import { getListingById } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { uploadImage, deleteImage } from '$lib/server/cloudinary';
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	// Server-side authorization guard
-	if (!verifyOwnership(listing, locals.user.id)) {
+	if (listing.userId !== locals.user.id) {
 		throw error(403, 'Forbidden: You do not have permission to edit this listing');
 	}
 
@@ -41,7 +41,7 @@ export const actions: Actions = {
 		}
 
 		// Server-side ownership check
-		if (!verifyOwnership(listing, locals.user.id)) {
+		if (listing.userId !== locals.user.id) {
 			throw error(403, 'Forbidden: You do not have permission to edit this listing');
 		}
 
@@ -65,15 +65,8 @@ export const actions: Actions = {
 		});
 
 		if (!validation.success) {
-			const fieldErrors: Record<string, string> = {};
-			for (const issue of validation.error.issues) {
-				const path = issue.path[0]?.toString();
-				if (path && !fieldErrors[path]) {
-					fieldErrors[path] = issue.message;
-				}
-			}
 			return fail(400, {
-				fieldErrors,
+				fieldErrors: getFieldErrors(validation.error),
 				values: { title, description, price: priceStr, category, location }
 			});
 		}

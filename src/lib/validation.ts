@@ -71,3 +71,10 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ListingInput = z.infer<typeof listingSchema>;
 
+export const formatPrice = (val: number): string => '₹' + val.toLocaleString('en-IN');
+
+export const getFieldErrors = (error: z.ZodError): Record<string, string> =>
+	Object.fromEntries(
+		Object.entries(error.flatten().fieldErrors).map(([k, v]) => [k, Array.isArray(v) && v[0] ? String(v[0]) : ''])
+	);
+

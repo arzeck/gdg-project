@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getListingById, verifyOwnership } from '$lib/server/listings';
+import { getListingById } from '$lib/server/listings';
 import { db } from '$lib/server/db';
 import { listings } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
@@ -20,7 +20,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 	}
 
 	// 3. Ownership Check (Strict Server-Side Authz)
-	if (!verifyOwnership(listing, locals.user.id)) {
+	if (listing.userId !== locals.user.id) {
 		return json(
 			{ error: 'Forbidden: You do not have permission to alter status for this listing' },
 			{ status: 403 }

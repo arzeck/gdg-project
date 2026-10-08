@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { listingSchema } from '$lib/validation';
+import { listingSchema, getFieldErrors } from '$lib/validation';
 import { db } from '$lib/server/db';
 import { listings, type Category } from '$lib/server/schema';
 import { uploadImage } from '$lib/server/cloudinary';
@@ -38,16 +38,7 @@ export const actions: Actions = {
 			location
 		});
 
-		const fieldErrors: Record<string, string> = {};
-
-		if (!validation.success) {
-			for (const issue of validation.error.issues) {
-				const path = issue.path[0]?.toString();
-				if (path && !fieldErrors[path]) {
-					fieldErrors[path] = issue.message;
-				}
-			}
-		}
+		const fieldErrors = validation.success ? {} : getFieldErrors(validation.error);
 
 		// Image file check
 		if (!(imageFile instanceof File) || imageFile.size === 0) {

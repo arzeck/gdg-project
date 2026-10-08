@@ -27,13 +27,8 @@
 
 	const displayError = $derived(localError || error);
 
-	function formatBytes(bytes: number) {
-		if (bytes === 0) return '0 Bytes';
-		const k = 1024;
-		const sizes = ['Bytes', 'KB', 'MB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	}
+	const formatBytes = (bytes: number): string =>
+		bytes < 1048576 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
 
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
