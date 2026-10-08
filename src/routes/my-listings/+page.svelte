@@ -24,7 +24,7 @@
 	let deleteModalOpen = $state(false);
 	let targetListing = $state<{ id: string; title: string } | null>(null);
 	let isDeleting = $state(false);
-	let deleteForm: HTMLFormElement;
+	let deleteForm = $state<HTMLFormElement>();
 
 	const filteredListings = $derived(
 		data.listings.filter((item) => {

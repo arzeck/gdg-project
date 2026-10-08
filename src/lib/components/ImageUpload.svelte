@@ -13,11 +13,17 @@
 		error?: string;
 	} = $props();
 
-	let previewUrl = $state(existingImageUrl);
+	let previewUrl = $state(existingImageUrl || '');
 	let fileName = $state('');
 	let fileSizeStr = $state('');
 	let localError = $state('');
-	let fileInput: HTMLInputElement;
+	let fileInput = $state<HTMLInputElement>();
+
+	$effect(() => {
+		if (existingImageUrl && !previewUrl) {
+			previewUrl = existingImageUrl;
+		}
+	});
 
 	const displayError = $derived(localError || error);
 
@@ -71,7 +77,7 @@
 </script>
 
 <div>
-	<label class="block text-xs font-medium uppercase tracking-wider text-zinc-400 mb-1.5">
+	<label for="image-file-input" class="block text-xs font-medium uppercase tracking-wider text-zinc-400 mb-1.5 cursor-pointer">
 		Item Image <span class="text-zinc-500 lowercase">(JPG, PNG, WEBP — Max 5MB)</span>
 	</label>
 
@@ -114,7 +120,7 @@
 					{/if}
 					<button
 						type="button"
-						onclick={() => fileInput.click()}
+						onclick={() => fileInput?.click()}
 						class="font-medium text-emerald-400 hover:text-emerald-300 underline"
 					>
 						Change
@@ -126,7 +132,7 @@
 		<!-- Empty Upload Dropzone -->
 		<button
 			type="button"
-			onclick={() => fileInput.click()}
+			onclick={() => fileInput?.click()}
 			class="flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/60 p-8 text-center transition-all hover:border-emerald-500/50 hover:bg-zinc-900/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
 		>
 			<div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-400">

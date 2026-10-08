@@ -100,6 +100,7 @@
 				bind:value={searchInput}
 				oninput={handleSearchInput}
 				placeholder="Search titles or descriptions (e.g. cycle, clrs, chair)..."
+				aria-label="Search listings by title or description"
 				class="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 py-2.5 pr-10 pl-10 text-xs text-zinc-100 placeholder-zinc-500 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
 			/>
 			{#if searchInput}
@@ -126,6 +127,7 @@
 				<select
 					bind:value={selectedSort}
 					onchange={() => applyFilters({ sort: selectedSort })}
+					aria-label="Sort listings"
 					class="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/80 py-2.5 pr-8 pl-9 text-xs text-zinc-200 transition-colors focus:border-emerald-500 focus:outline-none"
 				>
 					<option value="newest">Newest First</option>
@@ -197,9 +199,9 @@
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
 				<!-- Price Range -->
 				<div>
-					<label class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 mb-1.5">
+					<span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 mb-1.5">
 						Price Range (₹)
-					</label>
+					</span>
 					<div class="flex items-center gap-2">
 						<div class="relative flex-1">
 							<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-zinc-500 text-xs">₹</span>
@@ -209,6 +211,7 @@
 								bind:value={minPriceInput}
 								onchange={handlePriceChange}
 								placeholder="Min"
+								aria-label="Minimum price in Rupees"
 								class="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 py-2 pr-2.5 pl-6 text-xs text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
 							/>
 						</div>
@@ -221,6 +224,7 @@
 								bind:value={maxPriceInput}
 								onchange={handlePriceChange}
 								placeholder="Max"
+								aria-label="Maximum price in Rupees"
 								class="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 py-2 pr-2.5 pl-6 text-xs text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
 							/>
 						</div>
@@ -229,7 +233,7 @@
 
 				<!-- Campus Location Filter -->
 				<div>
-					<label class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 mb-1.5">
+					<label for="campus-location-filter" class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 mb-1.5">
 						Campus Area / Hostel
 					</label>
 					<div class="relative">
@@ -237,6 +241,7 @@
 							<MapPin class="h-3.5 w-3.5" />
 						</div>
 						<input
+							id="campus-location-filter"
 							type="text"
 							bind:value={locationInput}
 							oninput={handleLocationInput}
